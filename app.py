@@ -30,6 +30,23 @@ def home():
 def health():
     return "✅ OK"
 
+# Глобальный обработчик для ВСЕХ callback кнопок
+async def handle_all_callbacks(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    print(f"🎯 ПОЙМАН CALLBACK: {query.data}")
+    await query.answer()  # Обязательно отвечаем
+    
+    data = query.data
+    
+    # Перенаправляем на соответствующие обработчики
+    if data.startswith('lang_'):
+        await change_language(update, context)
+    elif data in ['back_to_main', 'back_to_services'] or data.startswith('service_') or data.startswith('order_'):
+        await handle_service_selection(update, context)
+    else:
+        print(f"❌ Неизвестный callback: {data}")
+        await query.answer("Неизвестная команда")
+
 def run_bot():
     """Запуск Telegram бота в отдельном потоке"""
     token = os.getenv('BOT_TOKEN')
@@ -40,15 +57,19 @@ def run_bot():
     try:
         application = Application.builder().token(token).build()
         
+        print("🔧 Настраиваем обработчики...")
+        
         # 1. Обработчики команд
         application.add_handler(CommandHandler("start", start_command))
+        print("✅ Обработчик /start добавлен")
         
-        # 2. Обработчики callback-кнопок - ОЧЕНЬ ВАЖНО: в правильном порядке!
-        application.add_handler(CallbackQueryHandler(change_language, pattern="^lang_"))
-        application.add_handler(CallbackQueryHandler(handle_service_selection))
+        # 2. УНИВЕРСАЛЬНЫЙ обработчик ВСЕХ callback кнопок
+        application.add_handler(CallbackQueryHandler(handle_all_callbacks))
+        print("✅ Универсальный обработчик callback кнопок добавлен")
         
-        # 3. ОБЩИЙ обработчик текстовых сообщений - В САМОМ КОНЦЕ
+        # 3. ОБЩИЙ обработчик текстовых сообщений
         application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+        print("✅ Обработчик текстовых сообщений добавлен")
         
         print("🤖 Бот запущен и готов к работе!")
         application.run_polling()
