@@ -3,41 +3,49 @@ from telegram.ext import ContextTypes
 from database import Database
 from keyboards import get_main_keyboard, get_admin_order_keyboard
 from config import LANGUAGES, get_service_prices, ADMIN_CHAT_ID, BOT_TOKEN
-import asyncio
 
 db = Database()
 
 async def handle_order_description(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # Проверяем, что это действительно описание заказа, а не кнопка меню
     user_id = update.effective_user.id
     language = db.get_user_language(user_id)
     texts = LANGUAGES[language]
-    services = get_service_prices(language)
     
-    user_data = context.user_data
-    description = update.message.text
-    user = update.effective_user
-    
-    if 'selected_service' not in user_data:
+    # Если пользователь не выбрал услугу, но пишет текст - это ошибка
+    if 'selected_service' not in context.user_data:
         await update.message.reply_text(
             "Пожалуйста, сначала выберите услугу из каталога" if language == 'ru' else "Please select a service from the catalog first",
             reply_markup=get_main_keyboard(language)
         )
         return
     
-    service_key = user_data['selected_service']
+    # Это действительно описание заказа
+    description = update.message.text
+    user = update.effective_user
+    services = get_service_prices(language)
+    
+    service_key = context.user_data['selected_service']
     service = services[service_key]
     
+    # Сохраняем описание
+    context.user_data['order_description'] = description
+    
     # Запрашиваем контактные данные
-    user_data['order_description'] = description
     await update.message.reply_text(texts['contact_prompt'])
     
-    # Устанавливаем следующее состояние
+    # Устанавливаем состояние ожидания контактов
     context.user_data['waiting_for_contacts'] = True
 
 async def handle_contact_info(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_data = context.user_data
-    
-    if not user_data.get('waiting_for_contacts'):
+    # Проверяем, что мы действительно ждем контактные данные
+    if not context.user_data.get('waiting_for_contacts'):
+        user_id = update.effective_user.id
+        language = db.get_user_language(user_id)
+        await update.message.reply_text(
+            "Используйте кнопки меню для навигации",
+            reply_markup=get_main_keyboard(language)
+        )
         return
     
     contact_info = update.message.text
@@ -51,16 +59,16 @@ async def handle_contact_info(update: Update, context: ContextTypes.DEFAULT_TYPE
         user_id=user.id,
         username=user.username or 'Не указан' if language == 'ru' else 'Not specified',
         first_name=user.first_name or 'Не указано' if language == 'ru' else 'Not specified',
-        service_type=user_data['selected_service'],
-        description=user_data['order_description'],
+        service_type=context.user_data['selected_service'],
+        description=context.user_data['order_description'],
         contact_info=contact_info
     )
     
     # Отправляем уведомление админу
-    await send_order_to_admin(order_id, user_data, user, contact_info, language)
+    await send_order_to_admin(order_id, context.user_data, user, contact_info, language)
     
     # Подтверждаем пользователю
-    service_name = services[user_data['selected_service']]['name']
+    service_name = services[context.user_data['selected_service']]['name']
     confirmation_text = texts['order_confirmed'].format(
         service_name=service_name,
         order_id=order_id
@@ -72,7 +80,7 @@ async def handle_contact_info(update: Update, context: ContextTypes.DEFAULT_TYPE
     )
     
     # Очищаем данные пользователя
-    user_data.clear()
+    context.user_data.clear()
 
 async def send_order_to_admin(order_id, user_data, user, contact_info, language='ru'):
     services = get_service_prices(language)
@@ -120,7 +128,7 @@ async def show_user_orders(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     text = texts['user_orders_title']
     
-    for order in orders[:5]:  # Показываем последние 5 заказов
+    for order in orders[:5]:
         order_id, _, _, _, service_type, description, contact, status, created_at = order
         service_name = services.get(service_type, {}).get('name', 'Неизвестная услуга')
         
