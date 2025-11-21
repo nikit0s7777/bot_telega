@@ -8,6 +8,8 @@ load_dotenv()
 BOT_TOKEN = os.getenv('BOT_TOKEN')
 ADMIN_CHAT_ID = os.getenv('ADMIN_CHAT_ID')
 
+print(f"🔧 Конфигурация: BOT_TOKEN={'установлен' if BOT_TOKEN else 'НЕТ'}, ADMIN_CHAT_ID={ADMIN_CHAT_ID}")  # Debug
+
 # Языковые пакеты
 LANGUAGES = {
     'ru': RU_TEXTS,
