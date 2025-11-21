@@ -14,7 +14,6 @@ def get_services_keyboard(language='ru'):
     keyboard = []
     services_list = list(services.keys())
     
-    # Создаем кнопки по 2 в ряду
     for i in range(0, len(services_list), 2):
         row = []
         for service_key in services_list[i:i+2]:
