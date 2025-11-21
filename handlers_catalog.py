@@ -11,6 +11,8 @@ async def show_services(update: Update, context: ContextTypes.DEFAULT_TYPE):
     language = db.get_user_language(user_id)
     texts = LANGUAGES[language]
     
+    print("🔄 Показываем каталог услуг")  # Debug
+    
     if update.message:
         await update.message.reply_text(texts['catalog_title'], reply_markup=get_services_keyboard(language))
     else:
@@ -26,11 +28,17 @@ async def handle_service_selection(update: Update, context: ContextTypes.DEFAULT
     services = get_service_prices(language)
     
     data = query.data
+    print(f"🔄 Обрабатываем callback: {data}")  # Debug
     
     if data == 'back_to_main':
         from handlers_start import start_command
-        await start_command(update, context)
+        if query.message:
+            await query.message.reply_text(
+                "Главное меню:",
+                reply_markup=get_main_keyboard(language)
+            )
         return
+        
     elif data == 'back_to_services':
         await show_services(update, context)
         return
