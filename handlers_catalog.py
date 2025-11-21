@@ -1,7 +1,7 @@
 from telegram import Update
 from telegram.ext import ContextTypes
 from database import Database
-from keyboards import get_services_keyboard, get_order_keyboard
+from keyboards import get_services_keyboard, get_order_keyboard, get_main_keyboard
 from config import LANGUAGES, get_service_prices
 
 db = Database()
@@ -11,7 +11,7 @@ async def show_services(update: Update, context: ContextTypes.DEFAULT_TYPE):
     language = db.get_user_language(user_id)
     texts = LANGUAGES[language]
     
-    print("🔄 Показываем каталог услуг")  # Debug
+    print(f"🔄 Показываем каталог услуг для пользователя {user_id}")
     
     if update.message:
         await update.message.reply_text(texts['catalog_title'], reply_markup=get_services_keyboard(language))
@@ -20,7 +20,7 @@ async def show_services(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def handle_service_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-    await query.answer()
+    await query.answer()  # Важно: подтверждаем callback
     
     user_id = query.from_user.id
     language = db.get_user_language(user_id)
@@ -28,15 +28,14 @@ async def handle_service_selection(update: Update, context: ContextTypes.DEFAULT
     services = get_service_prices(language)
     
     data = query.data
-    print(f"🔄 Обрабатываем callback: {data}")  # Debug
+    print(f"🔄 Обрабатываем callback: {data} от пользователя {user_id}")
     
     if data == 'back_to_main':
         from handlers_start import start_command
-        if query.message:
-            await query.message.reply_text(
-                "Главное меню:",
-                reply_markup=get_main_keyboard(language)
-            )
+        await query.edit_message_text(
+            "Главное меню:",
+            reply_markup=get_main_keyboard(language)
+        )
         return
         
     elif data == 'back_to_services':
