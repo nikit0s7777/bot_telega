@@ -19,7 +19,7 @@
 5. **Подключи GitHub репозиторий**
 6. **Настрой Environment Variables:**
    - `BOT_TOKEN` - 8304855216:AAEqNhe4Lvu-C2wSgwYWX0FpPXQAGPJJbKo
-   - `ADMIN_CHAT_ID` - 793822235
+   - `ADMIN_CHAT_ID` - 1003494765653
 
 ## ⚙️ Настройка бота
 
