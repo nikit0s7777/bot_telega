@@ -26,6 +26,10 @@ app = Flask('')
 def home():
     return "🤖 Бот активен и работает 24/7!"
 
+@app.route('/health')
+def health():
+    return "✅ OK"
+
 def run_flask():
     app.run(host='0.0.0.0', port=8080)
 
@@ -35,34 +39,48 @@ def keep_alive():
     t.start()
 
 def main():
+    # Проверяем наличие токена
+    token = os.getenv('BOT_TOKEN')
+    if not token:
+        print("❌ ОШИБКА: BOT_TOKEN не найден!")
+        print("📝 Добавь BOT_TOKEN в Environment Variables на Render")
+        return
+    
     # Запускаем Flask сервер для поддержания активности
     keep_alive()
+    print("🚀 Flask сервер запущен на порту 8080")
     
     # Создаем приложение бота
-    application = Application.builder().token(os.getenv('BOT_TOKEN')).build()
+    try:
+        application = Application.builder().token(token).build()
+        print("✅ Бот инициализирован успешно")
+    except Exception as e:
+        print(f"❌ Ошибка инициализации бота: {e}")
+        return
     
-    # Добавляем обработчики команд
+    # 1. Сначала обработчики команд
     application.add_handler(CommandHandler("start", start_command))
     
-    # Обработчик смены языка
+    # 2. Затем обработчики callback-кнопок (инлайн кнопки)
     application.add_handler(CallbackQueryHandler(change_language, pattern="^lang_"))
-    
-    # Обработчик инлайн-кнопок (каталог услуг)
     application.add_handler(CallbackQueryHandler(handle_service_selection))
     
-    # Обработчик описания заказа
+    # 3. ОБЩИЙ обработчик текстовых сообщений - В САМОМ КОНЦЕ
+    # Этот обработчик будет ловить ВСЕ текстовые сообщения
     application.add_handler(MessageHandler(
         filters.TEXT & ~filters.COMMAND, 
-        handle_order_description
+        handle_message
     ))
-    
-    # Общий обработчик текстовых сообщений
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     
     # Запускаем бота
     print("🤖 Бот запущен и готов к работе!")
     print("📍 Бот работает на Render 24/7")
-    application.run_polling()
+    
+    try:
+        application.run_polling()
+    except Exception as e:
+        print(f"❌ Бот упал с ошибкой: {e}")
+        print("🔄 Попытка перезапуска...")
 
 if __name__ == '__main__':
     main()
