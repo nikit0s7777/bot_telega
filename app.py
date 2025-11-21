@@ -1,7 +1,4 @@
 import os
-print(f"🔄 Проверка переменных: BOT_TOKEN={'есть' if os.getenv('BOT_TOKEN') else 'НЕТ'}, ADMIN_CHAT_ID={os.getenv('ADMIN_CHAT_ID')}")
-
-import os
 import logging
 from flask import Flask
 from threading import Thread
@@ -33,10 +30,6 @@ def home():
 def health():
     return "✅ OK"
 
-@app.route('/ping')
-def ping():
-    return "🏓 PONG"
-
 def run_bot():
     """Запуск Telegram бота в отдельном потоке"""
     token = os.getenv('BOT_TOKEN')
@@ -47,10 +40,14 @@ def run_bot():
     try:
         application = Application.builder().token(token).build()
         
-        # Настройка обработчиков
+        # 1. Обработчики команд
         application.add_handler(CommandHandler("start", start_command))
+        
+        # 2. Обработчики callback-кнопок - ОЧЕНЬ ВАЖНО: в правильном порядке!
         application.add_handler(CallbackQueryHandler(change_language, pattern="^lang_"))
         application.add_handler(CallbackQueryHandler(handle_service_selection))
+        
+        # 3. ОБЩИЙ обработчик текстовых сообщений - В САМОМ КОНЦЕ
         application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
         
         print("🤖 Бот запущен и готов к работе!")
