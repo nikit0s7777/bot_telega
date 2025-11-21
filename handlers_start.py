@@ -31,7 +31,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     text = update.message.text
     
-    print(f"📨 Получено сообщение: {text}")  # Debug
+    print(f"📨 Получено сообщение: '{text}' от пользователя {user_id}")
     
     # Проверяем состояние пользователя
     if context.user_data.get('waiting_for_contacts'):
