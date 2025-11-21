@@ -13,6 +13,8 @@ async def change_language(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = query.from_user.id
     language = query.data.replace('lang_', '')
     
+    print(f"🔄 Смена языка на: {language}")  # Debug
+    
     # Сохраняем выбор языка пользователя
     db.set_user_language(user_id, language)
     
@@ -35,7 +37,9 @@ async def show_language_menu(update: Update, context: ContextTypes.DEFAULT_TYPE)
             reply_markup=get_language_keyboard()
         )
     else:
-        await update.callback_query.edit_message_text(
+        query = update.callback_query
+        await query.answer()
+        await query.edit_message_text(
             texts['select_language'],
             reply_markup=get_language_keyboard()
         )
