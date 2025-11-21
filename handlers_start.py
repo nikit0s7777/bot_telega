@@ -11,8 +11,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = user.id
     
     # Очищаем состояние пользователя
-    if 'user_data' in context:
-        context.user_data.clear()
+    context.user_data.clear()
     
     # Получаем язык пользователя
     language = db.get_user_language(user_id)
@@ -32,10 +31,20 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     text = update.message.text
     
-    # Очищаем состояние при переходе в главное меню
-    if 'user_data' in context:
-        context.user_data.clear()
+    print(f"📨 Получено сообщение: {text}")  # Debug
     
+    # Проверяем состояние пользователя
+    if context.user_data.get('waiting_for_contacts'):
+        from handlers_orders import handle_contact_info
+        await handle_contact_info(update, context)
+        return
+        
+    elif context.user_data.get('selected_service'):
+        from handlers_orders import handle_order_description
+        await handle_order_description(update, context)
+        return
+    
+    # Обработка кнопок главного меню
     if text == texts['menu_catalog']:
         from handlers_catalog import show_services
         await show_services(update, context)
@@ -50,15 +59,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         from handlers_orders import show_user_orders
         await show_user_orders(update, context)
     else:
-        # Если сообщение не соответствует кнопкам, проверяем состояние
-        if context.user_data.get('waiting_for_contacts'):
-            from handlers_orders import handle_contact_info
-            await handle_contact_info(update, context)
-        elif context.user_data.get('selected_service'):
-            from handlers_orders import handle_order_description
-            await handle_order_description(update, context)
-        else:
-            await update.message.reply_text(
-                "Используйте кнопки меню для навигации" if language == 'ru' else "Use menu buttons for navigation",
-                reply_markup=get_main_keyboard(language)
-            )
+        await update.message.reply_text(
+            "Используйте кнопки меню для навигации",
+            reply_markup=get_main_keyboard(language)
+        )
