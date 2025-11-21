@@ -1,4 +1,7 @@
 import os
+print(f"🔄 Проверка переменных: BOT_TOKEN={'есть' if os.getenv('BOT_TOKEN') else 'НЕТ'}, ADMIN_CHAT_ID={os.getenv('ADMIN_CHAT_ID')}")
+
+import os
 import logging
 from flask import Flask
 from threading import Thread
