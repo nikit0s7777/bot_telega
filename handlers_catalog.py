@@ -11,7 +11,7 @@ async def show_services(update: Update, context: ContextTypes.DEFAULT_TYPE):
     language = db.get_user_language(user_id)
     texts = LANGUAGES[language]
     
-    print(f"🔄 Показываем каталог услуг для пользователя {user_id}")
+    print(f"🔄 Показываем каталог услуг")
     
     if update.message:
         await update.message.reply_text(texts['catalog_title'], reply_markup=get_services_keyboard(language))
@@ -20,18 +20,16 @@ async def show_services(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def handle_service_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-    await query.answer()  # Важно: подтверждаем callback
+    data = query.data
+    
+    print(f"🔄 Обрабатываем услугу: {data}")
     
     user_id = query.from_user.id
     language = db.get_user_language(user_id)
     texts = LANGUAGES[language]
     services = get_service_prices(language)
     
-    data = query.data
-    print(f"🔄 Обрабатываем callback: {data} от пользователя {user_id}")
-    
     if data == 'back_to_main':
-        from handlers_start import start_command
         await query.edit_message_text(
             "Главное меню:",
             reply_markup=get_main_keyboard(language)
